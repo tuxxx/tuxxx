@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#
+# Simple GUI for alsa_in & alsa_out utilities.
+# Based on Gtkdialog (http://xpt.sourceforge.net/techdocs/language/gtkdialog)
+#
+# This code is part of TuXXX project
+# https://github.com/tuxxx
+#
+
+GUI_TEMPLATE='
+<window title="Alsa-JACK Bridges">
+  <vbox>
+    <frame CAPTURE>
+      <tree rules_hint="true" exported_column="2">
+        <variable>CAPTURE</variable>
+        <width>500</width>
+        <height>300</height>
+        <label># | Device | Name</label>
+        __CAPTURE_DEVICES
+        <action>echo DEVICE=$CAPTURE</action>
+        <action>Exit:capture</action>
+      </tree>
+    </frame>
+    <frame PLAYBACK>
+      <tree rules_hint="true" exported_column="2">
+        <variable>PLAYBACK</variable>
+        <width>500</width>
+        <height>300</height>
+        <label># | Device | Name</label>
+        __PLAYBACK_DEVICES
+        <action>echo DEVICE=$PLAYBACK</action>
+        <action>Exit:playback</action>
+      </tree>
+    </frame>
+    <hbox>
+      <button>
+         <label>Refresh</label>
+      </button>
+      <button>
+         <label>Exit</label>
+         <action>Exit:abort</action>
+      </button>
+    </hbox>
+  </vbox>
+</window>
+'
+
+function get_devices() {
+    [ $1 = "capture" ] && ALSA_COMMAND="alsa_in" || ALSA_COMMAND="alsa_out"
+    if [ $(cat /proc/asound/pcm | wc -l) = 0 ]; then
+        echo "<item>||</item>"
+        return
+    fi
+    while read device; do
+        DEVICE=$(echo $device | sed "s/\([0-9]*\)[^0-9]*\(..-..\): \([^:]*\) .*/\2/")
+        DEVICE_NAME=$(echo $DEVICE | sed "s/^/hw:/" | sed "s/-/,/" | sed "s/0\([0-9]\)/\1/g")
+        STARTED="no"
+        if pgrep -f "$ALSA_COMMAND -d $DEVICE_NAME" &> /dev/null; then
+            STARTED="yes"
+        fi
+        echo $device | sed "s/\([0-9]*\)[^0-9]*\(..-..\): \([^:]*\) .*/<item stock=\"gtk-$STARTED\">\1|\2|\3<\/item>/"
+    done < <(cat /proc/asound/pcm | grep $1 | nl -n ln)
+}
+
+function toggle_device() {
+    [ $1 = "capture" ] && ALSA_COMMAND="alsa_in" || ALSA_COMMAND="alsa_out"
+    # TODO: don't hard-code ^hw: prefix
+    DEVICE_NAME=$(echo $2 | sed "s/^/hw:/" | sed "s/-/,/" | sed "s/0\([0-9]\)/\1/g")
+    PRETTY_NAME=$(cat /proc/asound/pcm | grep $1 | grep $DEVICE  | sed "s/..-..: \([^:]*\) : .*/\1/")
+    if pgrep -f "$ALSA_COMMAND -d $DEVICE_NAME" &> /dev/null; then
+        >&2 echo "Destroying $1 bridge to $PRETTY_NAME ($DEVICE_NAME)"
+        pgrep -f "$ALSA_COMMAND -d $DEVICE_NAME" | xargs kill -2
+    else
+        >&2 echo "Creating $1 bridge to $PRETTY_NAME ($DEVICE_NAME)"
+        $ALSA_COMMAND -d $DEVICE_NAME -j "$PRETTY_NAME" &
+    fi
+}
+
+while true; do
+    CAPTURE_DEVICES=$(get_devices capture  | sed '$!s@$@\\@g')
+    PLAYBACK_DEVICES=$(get_devices playback  | sed '$!s@$@\\@g')
+    export MAIN_DIALOG=$(echo $GUI_TEMPLATE \
+        | sed "s@__CAPTURE_DEVICES@${CAPTURE_DEVICES}@" \
+        | sed "s@__PLAYBACK_DEVICES@${PLAYBACK_DEVICES}@"
+    )
+
+    I=$IFS; IFS=""
+    for STATEMENTS in $(gtkdialog --program MAIN_DIALOG); do
+        eval $STATEMENTS
+    done
+    IFS=$I
+
+    if [ "$EXIT" = "capture" ] && [ $DEVICE ]; then
+        toggle_device capture $DEVICE
+    elif [ "$EXIT" = "playback" ] && [ $DEVICE ]; then
+        toggle_device playback $DEVICE
+    elif [ "$EXIT" = "abort" ]; then
+        break
+    fi
+done

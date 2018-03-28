@@ -1,0 +1,6 @@
+[submodule "config_files/awesome/lain"]
+	path = config_files/awesome/lain
+	url = https://github.com/lcpz/lain
+[submodule "opt/gtkdialog"]
+	path = opt/gtkdialog
+	url = https://github.com/oshazard/gtkdialog
