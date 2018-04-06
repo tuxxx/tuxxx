@@ -19,15 +19,20 @@ Instructions
 ------------
 Build the docker image:
 ```bash
-$ docker build -t tuxxx_maker .
+$ docker build -t tuxxx .
 ```
 
-Run `tuxxx_maker` in the container to create live USB disc:
+Run `tuxxx` image to build the system inside the container and generate ISO files:
 ```bash
-$ docker run --privileged --rm -it tuxxx_maker --usb-device=sdX
+$ docker run --privileged tuxxx
 ```
 
-**WARNING**: `--usb-device` will be erased and rewritten!
+You can also use it to "burn" the system onto a USB device:
+```bash
+$ docker run --privileged tuxxx --usb-device=sdX
+```
+
+**WARNING**: Replace sdX with the correct device name. Device will be erased and rewritten!
 
 
 Similar distributions
