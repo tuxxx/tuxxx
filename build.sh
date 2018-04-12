@@ -7,48 +7,46 @@
 # https://github.com/tuxxx
 #
 
+# Constants
+TUXXX_VERSION="1.0"
+DEV_MODE=true #TODO:remove
+COMMENT_IF_DEV_MODE=""
+if [ "$DEV_MODE" = true ]; then
+    COMMENT_IF_DEV_MODE="#"
+fi
+
+# Options
 DEBIAN_ARCH="amd64"
-DEBIAN_RELEASE="stretch"
 DEBIAN_MIRROR="http://ftp.us.debian.org/debian/"
-DEV_MODE=true
-
-die() { >&2 echo -e "$@" ; exit 1; }
-
 for opt in "$@"; do
   case ${opt} in
-    --usb-device=*)
-      USB_DEVICE="${opt#*=}" ; shift ;;
     --arch=*)
       DEBIAN_ARCH="${opt#*=}" ; shift ;;
-    --release=*)
-      DEBIAN_RELEASE="${opt#*=}" ; shift ;;
-    --mirror=*)
+    --debian_mirror=*)
       DEBIAN_MIRROR="${opt#*=}" ; shift ;;
   esac
 done
 
-# Create the minimal debian environment
+die() {
+    >&2 echo -e "$@" ; exit 1;
+}
+
+# Create a minimal debian environment
 rm -rf live_boot
 mkdir live_boot
 debootstrap \
     --arch=$DEBIAN_ARCH \
     --variant=minbase \
-    $DEBIAN_RELEASE live_boot/chroot \
+    stretch live_boot/chroot \
     $DEBIAN_MIRROR || \
     die "debootstrap failed!"
 
-# Pre-place gtkdialog & bridges_gui source codes
+# Pre-place gtkdialog & bridges_gui source codes for building in first chroot
 mkdir -p live_boot/chroot/opt
 cp -r /tuxxx/opt/gtkdialog live_boot/chroot/opt/
 
 mkdir -p live_boot/chroot/usr/local/bin
 cp -r /tuxxx/opt/bridges_gui live_boot/chroot/usr/local/bin/
-
-
-COMMENT_IF_DEV_MODE=""
-if [ "$DEV_MODE" = true ]; then
-    COMMENT_IF_DEV_MODE="#"
-fi
 
 # Configure the system inside the chroot
 cat << EOF | chroot live_boot/chroot
@@ -119,7 +117,7 @@ EOF
 [[ $? -eq 0 ]] || \
   die "Failed to clean-up root filesystem!"
 
-# Prepare files for UEFI boot partition.
+# Create Hybrid ISO
 mkdir -p live_boot/image/{live,isolinux}
 (cd live_boot && \
     rm -f image/live/filesystem.squashfs
@@ -130,19 +128,18 @@ mkdir -p live_boot/image/{live,isolinux}
 )
 
 cp -f /usr/lib/ISOLINUX/isolinux.bin live_boot/image/isolinux/ && \
-cp -f /usr/lib/syslinux/modules/bios/ldlinux.c32 live_boot/image/isolinux/ && \
-cp -f /tuxxx/config_files/isolinux.cfg live_boot/image/isolinux/ && \
-genisoimage \
-    -rational-rock \
-    -volid SYSTEM \
-    -cache-inodes \
-    -joliet \
-    -hfs \
-    -full-iso9660-filenames \
+cp -f /usr/lib/syslinux/modules/bios/ldlinux.c32 live_boot/image/ && \
+cp -f /tuxxx/config_files/isolinux.cfg live_boot/image/ && \
+
+mkdir -p /build
+xorriso -as mkisofs \
+    -r -J -joliet-long -l \
+    -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
+    -partition_offset 16 -A "TuxxxOS" \
     -b isolinux/isolinux.bin \
     -c isolinux/boot.cat \
     -no-emul-boot \
     -boot-load-size 4 \
     -boot-info-table \
-    -output /tuxxx/tuxxx.iso \
-    live_boot/image
+    -o /build/tuxxx-${TUXXX_VERSION}-${DEBIAN_ARCH}.iso \
+    ./live_boot/image

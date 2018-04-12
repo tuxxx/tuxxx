@@ -22,17 +22,17 @@ Build the docker image:
 $ docker build -t tuxxx .
 ```
 
-Run `tuxxx` image to build the system inside the container and generate ISO files:
+Start the `tuxxx` container to generate the ISO file:
 ```bash
-$ docker run --privileged tuxxx
+$ docker run --privileged tuxxx -v "$PWD"/build:/build
+    [--arch=amd64 --debian_mirror=http://ftp.us.debian.org/debian]
 ```
 
-You can also use it to "burn" the system onto a USB device:
-```bash
-$ docker run --privileged tuxxx --usb-device=sdX
-```
 
-**WARNING**: Replace sdX with the correct device name. Device will be erased and rewritten!
+Contributing
+------------
+If you wish to contribute, please use GitHub issue tracker
+or fork and create an pull-request.
 
 
 Similar distributions
