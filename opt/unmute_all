@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Unmute all devices & set volume to 70 %.
+#
+# This code is part of TuXXX project
+# https://github.com/tuxxx
+#
+
+amixer scontrols \
+    | grep -oE "'.*'" \
+    | awk -F\' '{print "amixer -c 0 set \""$2"\" playback 70% unmute"}' \
+    | bash -x

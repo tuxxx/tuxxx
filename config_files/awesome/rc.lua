@@ -42,7 +42,7 @@ end
 -- }}}
 
 -- {{{ Autostart processes
-run_once({"feh --randomize --bg-fill /home/tuxxx/.wallpapers"})
+run_once({"feh --randomize --bg-fill /home/tuxxx/wallpapers"})
 run_once({"nm-applet"})
 run_once({"mixxx"})
 -- }}}
@@ -64,18 +64,18 @@ awful.layout.layouts = {
 awful.util.taglist_buttons = awful.util.table.join(
     awful.button({ }, 1, function(t)
         t:view_only()
-	if t.name == "mixxx" then
+    if t.name == "mixxx" then
             run_once({"mixxx"})
-	end
-	if t.name == "jack" then
+    end
+    if t.name == "jack" then
             run_once({"qjackctl", "bridges_gui"})
-	end
-	if t.name == "web" then
+    end
+    if t.name == "web" then
             run_once({"iceweasel"})
-	end
-	if t.name == "settings" then
+    end
+    if t.name == "settings" then
             run_once({"arandr"})
-	end
+    end
     end)
 )
 

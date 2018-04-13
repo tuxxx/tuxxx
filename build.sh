@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Main script that builds TuXXX operating system.
 # Based on Debian.
@@ -46,7 +46,7 @@ mkdir -p live_boot/chroot/opt
 cp -r /tuxxx/opt/gtkdialog live_boot/chroot/opt/
 
 mkdir -p live_boot/chroot/usr/local/bin
-cp -r /tuxxx/opt/bridges_gui live_boot/chroot/usr/local/bin/
+cp -r /tuxxx/opt/bridges_gui /tuxxx/opt/unmute_all live_boot/chroot/usr/local/bin/
 
 # Configure the system inside the chroot
 cat << EOF | chroot live_boot/chroot

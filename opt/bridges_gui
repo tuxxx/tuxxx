@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Simple GUI for alsa_in & alsa_out utilities.
 # Based on Gtkdialog (http://xpt.sourceforge.net/techdocs/language/gtkdialog)
